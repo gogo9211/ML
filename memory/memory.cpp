@@ -56,7 +56,7 @@ section_data erw::get_section_by_name(const char* const module_name, const char*
 		if (std::strcmp(string_buffer.c_str(), section_name) == 0)
 		{
 			const auto section_start = mod_base + read_memory<std::uintptr_t>(reinterpret_cast<std::uintptr_t>(section) + 0xC);
-			const auto section_size = read_memory<std::uintptr_t>(reinterpret_cast<std::uintptr_t>(section) + 0x8);
+			const auto section_size = read_memory<std::uint32_t>(reinterpret_cast<std::uintptr_t>(section) + 0x8);
 
 			return { section_start, section_size };
 		}
@@ -65,7 +65,7 @@ section_data erw::get_section_by_name(const char* const module_name, const char*
 	return {};
 }
 
-std::uint32_t erw::get_export(const char* const module_name, const char* const function_name)
+std::uintptr_t erw::get_export(const char* const module_name, const char* const function_name)
 {
 	const auto base_address = get_process_module(module_name);
 
@@ -79,9 +79,9 @@ std::uint32_t erw::get_export(const char* const module_name, const char* const f
 	const auto names = base_address + export_directory.AddressOfNames;
 	const auto ordinals = base_address + export_directory.AddressOfNameOrdinals;
 
-	for (auto i = 0u; i < export_directory.NumberOfFunctions; ++i)
+	for (auto i = 0u; i < export_directory.NumberOfNames; ++i)
 	{
-		auto buffer = reinterpret_cast<std::uintptr_t>(reinterpret_cast<char*>(base_address) + read_memory<std::uint32_t>(names + i * sizeof(std::uintptr_t)));
+		auto buffer = reinterpret_cast<std::uintptr_t>(reinterpret_cast<char*>(base_address) + read_memory<std::uint32_t>(names + i * sizeof(std::uint32_t)));
 
 		std::string string_buffer;
 
@@ -90,7 +90,7 @@ std::uint32_t erw::get_export(const char* const module_name, const char* const f
 		while (read_memory<std::uint8_t>(buffer) != '\0');
 
 		if (std::strcmp(string_buffer.c_str(), function_name) == 0)
-			return base_address + read_memory<std::uint32_t>(functions + read_memory<std::uint16_t>(ordinals + i * sizeof(std::uint16_t)) * sizeof(std::uintptr_t));
+			return base_address + read_memory<std::uint32_t>(functions + read_memory<std::uint16_t>(ordinals + i * sizeof(std::uint16_t)) * sizeof(std::uint32_t));
 	}
 
 	return {};
@@ -111,6 +111,22 @@ bool erw::load_dll(const char* const path)
 	if (!payload_alloc)
 		return false;
 
+#ifdef _M_X64
+	std::uint8_t payload[] =
+	{
+		0x48, 0x83, 0xEC, 0x28, 0x48,
+		0xB9, 0x50, 0x23, 0xC4, 0x29,
+		0xF6, 0x7F, 0x00, 0x00, 0xFF,
+		0x15, 0x02, 0x00, 0x00, 0x00,
+		0xEB, 0x08, 0x30, 0x8C, 0xDF,
+		0x24, 0xF8, 0x7F, 0x00, 0x00,
+		0x33, 0xC0, 0x48, 0x83, 0xC4,
+		0x28, 0xC3
+	};
+
+	*reinterpret_cast<std::uintptr_t*>(payload + 6) = str_addr;
+	*reinterpret_cast<std::uintptr_t*>(payload + 22) = loadlib_addr;
+#else
 	std::uint8_t payload[] =
 	{
 		0x55, 0x89, 0xe5, 0x68, 0x00,
@@ -121,6 +137,7 @@ bool erw::load_dll(const char* const path)
 
 	*reinterpret_cast<std::uintptr_t*>(payload + 4) = str_addr;
 	*reinterpret_cast<std::uintptr_t*>(payload + 9) = loadlib_addr - (payload_alloc + 8) - 5;
+#endif
 
 	WriteProcessMemory(process_handle.get(), reinterpret_cast<void*>(payload_alloc), payload, sizeof(payload), 0);
 

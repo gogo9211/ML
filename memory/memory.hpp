@@ -77,7 +77,7 @@ public:
 
 	section_data get_section_by_name(const char* const module_name, const char* const section_name);
 
-	std::uint32_t get_export(const char* const module_name, const char* const function_name);
+	std::uintptr_t get_export(const char* const module_name, const char* const function_name);
 
 	bool load_dll(const char* const path);
 
