@@ -55,7 +55,7 @@ section_data erw::get_section_by_name(const char* const module_name, const char*
 
 		if (std::strcmp(string_buffer.c_str(), section_name) == 0)
 		{
-			const auto section_start = mod_base + read_memory<std::uintptr_t>(reinterpret_cast<std::uintptr_t>(section) + 0xC);
+			const auto section_start = mod_base + read_memory<std::uint32_t>(reinterpret_cast<std::uintptr_t>(section) + 0xC);
 			const auto section_size = read_memory<std::uint32_t>(reinterpret_cast<std::uintptr_t>(section) + 0x8);
 
 			return { section_start, section_size };
@@ -129,9 +129,9 @@ bool erw::load_dll(const char* const path)
 #else
 	std::uint8_t payload[] =
 	{
-		0x55, 0x89, 0xe5, 0x68, 0x00,
-		0x00, 0x00, 0x00, 0xe8, 0x00,
-		0x00, 0x00, 0x00, 0x5d, 0xc2,
+		0x55, 0x89, 0xE5, 0x68, 0x00,
+		0x00, 0x00, 0x00, 0xE8, 0x00,
+		0x00, 0x00, 0x00, 0x5D, 0xC2,
 		0x00, 0x00
 	};
 
