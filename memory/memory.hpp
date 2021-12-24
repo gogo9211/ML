@@ -137,7 +137,7 @@ public:
 
 		if (handle)
 		{
-			WaitForSingleObject(handle, wait_for_exit ? 5000 : 1);
+			WaitForSingleObject(handle, wait_for_exit ? 5000 : 100);
 
 			DWORD return_val{};
 

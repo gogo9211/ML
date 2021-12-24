@@ -228,8 +228,8 @@ std::size_t erw::get_function_size(void* src)
 	std::uint8_t* bytes = static_cast<std::uint8_t*>(src);
 
 	do
-		bytes += 10;
-	while (!(bytes[0] == 0x55 && bytes[1] == 0x8B && bytes[2] == 0xEC));
+		++bytes;
+	while (!(bytes[0] == 0xCC && bytes[1] == 0xCC));
 
 	return bytes - src;
 }
