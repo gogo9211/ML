@@ -71,6 +71,8 @@ private:
 
 public:
 	erw(const char* const process_name);
+	erw(DWORD process_id) : pid{ process_id } { process_handle = smart_handle{ OpenProcess(PROCESS_ALL_ACCESS, false, process_id) }; };
+	erw(HANDLE handle);
 	erw(const erw&) = delete;
 
 	std::uintptr_t get_process_module(const char* const module_name) const;
@@ -87,6 +89,12 @@ public:
 
 	void* map_function(void* src);
 
+	DWORD set_protection(std::uintptr_t address, std::uint16_t protection);
+
+	bool is_handle_open() {  return process_handle.get() != INVALID_HANDLE_VALUE && process_handle.get() != 0; };
+
+	HANDLE get_handle() { return process_handle.get(); }
+
 	template<typename type>
 	type read_memory(std::uintptr_t address) const
 	{
@@ -99,6 +107,9 @@ public:
 
 		return {};
 	}
+
+	template<typename type, class t, std::size_t n>
+	void read_buffer(std::uintptr_t address, t(&buffer)[n]) const { ReadProcessMemory(process_handle.get(), reinterpret_cast<void*>(address), &buffer, n, nullptr); }
 
 	template<typename type>
 	bool write_memory(std::uintptr_t address, type buffer) const

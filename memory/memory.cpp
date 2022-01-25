@@ -11,6 +11,13 @@ erw::erw(const char* const process_name)
 	process_handle = smart_handle{ OpenProcess(PROCESS_ALL_ACCESS, false, pid) };
 }
 
+erw::erw(HANDLE handle)
+{
+	pid = GetProcessId(handle);
+
+	process_handle = smart_handle{ handle };
+}
+
 std::uintptr_t erw::get_process_module(const char* const module_name) const
 {
     MODULEENTRY32W me32;
@@ -221,6 +228,15 @@ void* erw::map_function(void* src)
 	WriteProcessMemory(process_handle.get(), memory, buffer.get(), size, nullptr);
 
 	return memory;
+}
+
+DWORD erw::set_protection(std::uintptr_t address, std::uint16_t protection)
+{
+	DWORD old;
+
+	VirtualProtectEx(process_handle.get(), reinterpret_cast<void*>(address), sizeof(address), protection, &old);
+
+	return old;
 }
 
 std::size_t erw::get_function_size(void* src)
